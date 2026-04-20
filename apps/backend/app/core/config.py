@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     local_storage_dir: str = "/tmp/heart-uploads"
     max_upload_mb: int = Field(default=250, ge=1, le=2048)
     debug_errors: bool = True
+    reset_incompatible_schema: bool = True
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
