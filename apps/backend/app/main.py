@@ -1,7 +1,9 @@
 import logging
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.api.routes import router
 from app.core.config import settings
@@ -31,6 +33,20 @@ app.include_router(router)
 @app.on_event("startup")
 def startup() -> None:
     ensure_database_schema()
+
+
+@app.exception_handler(SQLAlchemyError)
+async def sqlalchemy_exception_handler(request: Request, exc: SQLAlchemyError) -> JSONResponse:
+    logging.exception("Database error on %s", request.url.path)
+    detail = str(getattr(exc, "orig", exc)) if settings.debug_errors else "Database error"
+    return JSONResponse(status_code=500, content={"detail": detail})
+
+
+@app.exception_handler(Exception)
+async def generic_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    logging.exception("Unhandled error on %s", request.url.path)
+    detail = str(exc) if settings.debug_errors else "Internal server error"
+    return JSONResponse(status_code=500, content={"detail": detail})
 
 
 @app.get("/")

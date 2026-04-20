@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     storage_region: str = "eu-south-1"
     local_storage_dir: str = "/tmp/heart-uploads"
     max_upload_mb: int = Field(default=250, ge=1, le=2048)
+    debug_errors: bool = True
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
