@@ -1,0 +1,17 @@
+{
+  "applicationStatus": ["draft", "submitted", "screening", "reviewed"],
+  "assetKind": ["profile_image", "intro_video", "portfolio"],
+  "screeningResult": {
+    "summary": "string",
+    "strengths": ["string"],
+    "risks": ["string"],
+    "fit_score": "integer 1..10",
+    "recommended_next_action": "string"
+  },
+  "futureAiTools": [
+    "screen_application",
+    "semantic_candidate_search",
+    "recommend_casting_shortlist",
+    "audit_application_change"
+  ]
+}
