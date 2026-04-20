@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CheckCircle2, ChevronRight, Film, ImageIcon, Save } from "lucide-react";
+import { BrainCircuit, CheckCircle2, ChevronRight, Film, ImageIcon, Save } from "lucide-react";
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -131,7 +131,8 @@ export default function ApplyPage() {
     try {
       const saved = await saveDraft();
       const submitted = await api.submitApplication(saved.id);
-      setApplication(submitted);
+      const refreshed = await api.getApplication(submitted.id).catch(() => submitted);
+      setApplication(refreshed);
       setStatus("Candidatura inviata e screening AI completato");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Invio non riuscito");
@@ -187,6 +188,9 @@ export default function ApplyPage() {
                   </div>
                 </div>
               )}
+              {application?.status === "reviewed" && (
+                <ScreeningResultPanel application={application} />
+              )}
               {status && <p className="text-sm font-semibold text-basil">{status}</p>}
               {error && <p className="text-sm font-semibold text-coral">{error}</p>}
             </div>
@@ -209,6 +213,52 @@ export default function ApplyPage() {
         </aside>
       </div>
     </main>
+  );
+}
+
+function ScreeningResultPanel({ application }: { application: Application }) {
+  const screening = application.screening_result;
+  return (
+    <div className="rounded-lg border border-basil/20 bg-basil/5 p-5">
+      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
+        <div>
+          <h2 className="flex items-center gap-2 text-xl font-black text-basil">
+            <BrainCircuit size={22} /> Esito AI preliminare
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-ink/70">
+            Valutazione generata sui dati strutturati della candidatura. Il team heArt potrà approfondire in area recruiter.
+          </p>
+        </div>
+        <div className="rounded-lg bg-white px-4 py-3 text-center shadow-soft">
+          <p className="text-xs font-bold uppercase text-ink/50">Fit score</p>
+          <p className="text-3xl font-black text-basil">{screening?.fit_score ?? "-"}/10</p>
+        </div>
+      </div>
+      <p className="mt-4 leading-7 text-ink/78">
+        {screening?.summary ?? `${application.candidate.full_name} ha completato una candidatura per ${application.role}.`}
+      </p>
+      <div className="mt-5 grid gap-4 md:grid-cols-2">
+        <ResultList title="Punti forti" items={screening?.strengths ?? application.skills} />
+        <ResultList title="Da verificare" items={screening?.risks ?? ["Revisione manuale del team casting"]} />
+      </div>
+      <div className="mt-4 rounded-md bg-white p-4">
+        <p className="text-sm font-bold">Prossima azione suggerita</p>
+        <p className="mt-1 text-sm leading-6 text-ink/70">{screening?.recommended_next_action ?? "Revisione recruiter"}</p>
+      </div>
+    </div>
+  );
+}
+
+function ResultList({ title, items }: { title: string; items: string[] }) {
+  return (
+    <div>
+      <h3 className="font-bold">{title}</h3>
+      <ul className="mt-3 space-y-2 text-sm leading-6 text-ink/70">
+        {(items.length ? items : ["Non disponibile"]).map((item) => (
+          <li key={item} className="rounded-md bg-white px-3 py-2">{item}</li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

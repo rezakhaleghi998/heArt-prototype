@@ -76,6 +76,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export const api = {
   createApplication: (payload: ApplicationPayload) =>
     request<Application>("/applications", { method: "POST", body: JSON.stringify(payload) }),
+  getApplication: (id: string) =>
+    request<Application>(`/applications/${id}`),
   updateApplication: (id: string, payload: ApplicationPayload) =>
     request<Application>(`/applications/${id}`, { method: "PATCH", body: JSON.stringify(payload) }),
   submitApplication: (id: string) =>

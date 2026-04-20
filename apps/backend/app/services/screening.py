@@ -35,7 +35,7 @@ class ScreeningService:
         self.db.commit()
 
         try:
-            payload = self._screen_with_groq(application) if settings.groq_api_key else self._fallback_screening(application)
+            payload = self._screen_with_groq(application) if self._has_valid_groq_key() else self._fallback_screening(application)
             result.status = ScreeningStatus.completed
             result.summary = payload.summary
             result.strengths = payload.strengths
@@ -87,6 +87,10 @@ class ScreeningService:
             if start >= 0 and end > start:
                 return ScreeningPayload.model_validate(json.loads(content[start:end]))
             raise
+
+    def _has_valid_groq_key(self) -> bool:
+        key = settings.groq_api_key.strip()
+        return bool(key and not key.startswith("your_") and key.lower() not in {"changeme", "placeholder"})
 
     def _fallback_screening(self, application: Application) -> ScreeningPayload:
         missing = []
