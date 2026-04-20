@@ -1,4 +1,4 @@
-export const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/api/v1";
+export const API_BASE = (process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/api/v1").replace(/\/$/, "");
 
 export type ApplicationStatus = "draft" | "submitted" | "screening" | "reviewed";
 export type AssetKind = "profile_image" | "intro_video" | "portfolio";
@@ -56,11 +56,16 @@ export type Application = {
 };
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE}${path}`, {
-    ...init,
-    headers: { "Content-Type": "application/json", ...init?.headers },
-    cache: "no-store"
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE}${path}`, {
+      ...init,
+      headers: { "Content-Type": "application/json", ...init?.headers },
+      cache: "no-store"
+    });
+  } catch {
+    throw new Error(`Backend non raggiungibile. Verifica NEXT_PUBLIC_API_BASE_URL=${API_BASE} e CORS_ORIGINS sul backend.`);
+  }
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: "Errore API" }));
     throw new Error(error.detail ?? "Errore API");
@@ -82,6 +87,25 @@ export const api = {
       method: "POST",
       body: JSON.stringify(payload)
     }),
+  uploadDirect: async (asset_id: string, file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    let response: Response;
+    try {
+      response = await fetch(`${API_BASE}/uploads/${asset_id}/file`, {
+        method: "POST",
+        body: formData,
+        cache: "no-store"
+      });
+    } catch {
+      throw new Error(`Backend upload non raggiungibile. Verifica NEXT_PUBLIC_API_BASE_URL=${API_BASE} e CORS_ORIGINS sul backend.`);
+    }
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: "Errore upload" }));
+      throw new Error(error.detail ?? "Errore upload");
+    }
+    return response.json();
+  },
   confirmUpload: (asset_id: string, public_url?: string) =>
     request("/uploads/confirm", { method: "POST", body: JSON.stringify({ asset_id, public_url }) })
 };

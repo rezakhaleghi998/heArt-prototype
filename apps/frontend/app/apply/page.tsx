@@ -49,6 +49,7 @@ export default function ApplyPage() {
   const [profileUploaded, setProfileUploaded] = useState(false);
   const [status, setStatus] = useState<string>("");
   const [error, setError] = useState<string>("");
+  const [uploadingKind, setUploadingKind] = useState<AssetKind | null>(null);
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     mode: "onChange",
@@ -92,21 +93,32 @@ export default function ApplyPage() {
   async function upload(kind: AssetKind, file: File | null) {
     if (!file) return;
     setError("");
-    const saved = application ?? (await saveDraft());
-    const init = await api.initUpload({
-      application_id: saved.id,
-      kind,
-      file_name: file.name,
-      content_type: file.type,
-      size_bytes: file.size
-    });
-    if (!init.upload_url.includes("storage.local")) {
-      await fetch(init.upload_url, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+    setUploadingKind(kind);
+    setStatus("Preparazione upload...");
+    try {
+      const saved = application ?? (await saveDraft());
+      const init = await api.initUpload({
+        application_id: saved.id,
+        kind,
+        file_name: file.name,
+        content_type: file.type,
+        size_bytes: file.size
+      });
+      if (init.upload_url.includes("storage.local")) {
+        await api.uploadDirect(init.asset_id, file);
+      } else {
+        const uploadResponse = await fetch(init.upload_url, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+        if (!uploadResponse.ok) {
+          throw new Error("Upload verso storage non riuscito. Controlla CORS e credenziali dello storage.");
+        }
+        await api.confirmUpload(init.asset_id, init.upload_url.split("?")[0]);
+      }
+      if (kind === "intro_video") setVideoUploaded(true);
+      if (kind === "profile_image") setProfileUploaded(true);
+      setStatus("Media confermato");
+    } finally {
+      setUploadingKind(null);
     }
-    await api.confirmUpload(init.asset_id, init.upload_url.includes("storage.local") ? undefined : init.upload_url.split("?")[0]);
-    if (kind === "intro_video") setVideoUploaded(true);
-    if (kind === "profile_image") setProfileUploaded(true);
-    setStatus("Media confermato");
   }
 
   async function submit() {
@@ -158,8 +170,8 @@ export default function ApplyPage() {
                 </div>
               ) : (
                 <div className="grid gap-4 md:grid-cols-2">
-                  <UploadBox title="Foto profilo" hint="Opzionale, JPG/PNG/WebP" icon={<ImageIcon />} done={profileUploaded} onFile={(file) => upload("profile_image", file).catch((err) => setError(err.message))} />
-                  <UploadBox title="Intro video" hint="Richiesto per invio, MP4/MOV/WebM" icon={<Film />} done={videoUploaded} onFile={(file) => upload("intro_video", file).catch((err) => setError(err.message))} />
+                  <UploadBox title="Foto profilo" hint="Opzionale, JPG/PNG/WebP" icon={<ImageIcon />} done={profileUploaded} busy={uploadingKind === "profile_image"} onFile={(file) => upload("profile_image", file).catch((err) => setError(err.message))} />
+                  <UploadBox title="Intro video" hint="Richiesto per invio, MP4/MOV/WebM" icon={<Film />} done={videoUploaded} busy={uploadingKind === "intro_video"} onFile={(file) => upload("intro_video", file).catch((err) => setError(err.message))} />
                   <div className="md:col-span-2 flex flex-col gap-3 sm:flex-row">
                     <Button disabled={!application || !videoUploaded} onClick={submit}>
                       Invia candidatura
@@ -209,13 +221,13 @@ function Field({ step, form }: { step: (typeof steps)[number]; form: ReturnType<
   return <Input type={step.kind === "number" ? "number" : "text"} {...register} placeholder="Risposta" />;
 }
 
-function UploadBox({ title, hint, icon, done, onFile }: { title: string; hint: string; icon: ReactNode; done: boolean; onFile: (file: File | null) => void }) {
+function UploadBox({ title, hint, icon, done, busy, onFile }: { title: string; hint: string; icon: ReactNode; done: boolean; busy: boolean; onFile: (file: File | null) => void }) {
   return (
     <label className="flex cursor-pointer flex-col gap-3 rounded-lg border border-dashed border-ink/20 bg-white p-5 transition hover:border-basil">
       <div className="flex items-center gap-3 text-basil">{icon}<span className="font-bold">{title}</span></div>
       <span className="text-sm text-ink/62">{hint}</span>
-      <input className="sr-only" type="file" onChange={(event) => onFile(event.target.files?.[0] ?? null)} />
-      <span className="text-sm font-semibold">{done ? "Caricato" : "Scegli file"}</span>
+      <input className="sr-only" type="file" disabled={busy} onChange={(event) => onFile(event.target.files?.[0] ?? null)} />
+      <span className="text-sm font-semibold">{busy ? "Caricamento..." : done ? "Caricato" : "Scegli file"}</span>
     </label>
   );
 }

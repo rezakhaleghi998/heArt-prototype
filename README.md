@@ -65,6 +65,7 @@ Backend:
 - `APP_ENV`
 - `DATABASE_URL`
 - `CORS_ORIGINS`
+- `CORS_ORIGIN_REGEX`
 - `GROQ_API_KEY`
 - `GROQ_MODEL`
 - `STORAGE_ENDPOINT`
@@ -72,11 +73,14 @@ Backend:
 - `STORAGE_SECRET_KEY`
 - `STORAGE_BUCKET`
 - `STORAGE_REGION`
+- `LOCAL_STORAGE_DIR`
 - `MAX_UPLOAD_MB`
 
 If `GROQ_API_KEY` is empty, the backend uses a deterministic fallback screening so the demo remains usable.
 
 If storage credentials are empty, upload init returns a local placeholder URL. The frontend still creates and confirms media metadata, which keeps the production API shape intact.
+
+For Railway demos without S3/R2 credentials, the frontend uses a direct multipart fallback endpoint on the backend. Files are stored in `LOCAL_STORAGE_DIR` on the service filesystem, which is acceptable for the prototype but should be replaced by object storage for production.
 
 ## API Highlights
 
@@ -99,6 +103,7 @@ If storage credentials are empty, upload init returns a local placeholder URL. T
    - Dockerfile path: `Dockerfile`
    - Set `DATABASE_URL` from the Railway PostgreSQL connection string.
    - Set `CORS_ORIGINS` to the deployed frontend URL.
+   - Keep `CORS_ORIGIN_REGEX=https://.*\.up\.railway\.app` during early Railway testing, or narrow it later.
    - Set `GROQ_API_KEY` and `GROQ_MODEL`.
    - Optional: set S3-compatible `STORAGE_*` variables.
 4. Deploy the backend. The container runs `alembic upgrade head` before starting Uvicorn.

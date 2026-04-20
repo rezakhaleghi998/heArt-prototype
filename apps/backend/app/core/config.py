@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     app_env: str = "local"
     database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/heart"
     cors_origins: str = "http://localhost:3000"
+    cors_origin_regex: str | None = r"https://.*\.up\.railway\.app"
     groq_api_key: str = ""
     groq_model: str = "llama-3.1-8b-instant"
     storage_endpoint: str | None = None
@@ -15,6 +16,7 @@ class Settings(BaseSettings):
     storage_secret_key: str | None = None
     storage_bucket: str = "heart-demo"
     storage_region: str = "eu-south-1"
+    local_storage_dir: str = "/tmp/heart-uploads"
     max_upload_mb: int = Field(default=250, ge=1, le=2048)
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")

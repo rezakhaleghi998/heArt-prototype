@@ -1,9 +1,12 @@
 import uuid
+from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.db.session import get_db
+from app.models.media_asset import MediaAsset
 from app.models.enums import ApplicationStatus
 from app.repositories.applications import ApplicationRepository
 from app.schemas.application import (
@@ -92,6 +95,35 @@ def confirm_upload(payload: ConfirmAssetIn, db: Session = Depends(get_db)) -> Me
     asset = ApplicationRepository(db).confirm_asset(payload.asset_id, payload.public_url)
     if asset is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Asset not found")
+    return asset
+
+
+@router.post("/uploads/{asset_id}/file", response_model=MediaAssetOut)
+async def upload_file_direct(asset_id: uuid.UUID, file: UploadFile = File(...), db: Session = Depends(get_db)) -> MediaAssetOut:
+    asset = db.get(MediaAsset, asset_id)
+    if asset is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Asset not found")
+    if file.content_type != asset.content_type:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Il tipo file non corrisponde alla richiesta upload")
+
+    target = Path(settings.local_storage_dir) / asset.storage_key
+    target.parent.mkdir(parents=True, exist_ok=True)
+    total = 0
+    with target.open("wb") as output:
+        while chunk := await file.read(1024 * 1024):
+            total += len(chunk)
+            if total > settings.max_upload_mb * 1024 * 1024:
+                target.unlink(missing_ok=True)
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="File troppo grande per questo prototipo")
+            output.write(chunk)
+
+    asset.size_bytes = total
+    asset.uploaded = True
+    asset.public_url = f"local://{asset.storage_key}"
+    if asset.application:
+        asset.application.completion_percent = max(asset.application.completion_percent, 90)
+    db.commit()
+    db.refresh(asset)
     return asset
 
 
