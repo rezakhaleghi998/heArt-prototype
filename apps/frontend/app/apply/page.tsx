@@ -85,7 +85,12 @@ export default function ApplyPage() {
     const ok = await form.trigger(current.key);
     if (!ok) return;
     if (step === 3 || step === 7 || step === steps.length - 1) {
-      await saveDraft().catch((err) => setError(err.message));
+      try {
+        await saveDraft();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Errore API");
+        return;
+      }
     }
     setStep((value) => Math.min(value + 1, steps.length));
   }
