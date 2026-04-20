@@ -31,6 +31,8 @@ class ApplicationRepository:
     def _query(self):
         return select(Application).options(
             selectinload(Application.candidate),
+            selectinload(Application.answers),
+            selectinload(Application.consents),
             selectinload(Application.media_assets),
             selectinload(Application.screening_result),
         )
@@ -56,19 +58,28 @@ class ApplicationRepository:
 
         application = self.get(application_id) if application_id else None
         if application is None:
-            application = Application(candidate_id=candidate.id, role=payload.role)
+            application = Application(
+                candidate_id=candidate.id,
+                role=payload.role,
+                short_bio=payload.short_bio,
+                years_experience=payload.years_experience,
+                skills=payload.skills,
+                availability=payload.availability,
+                portfolio_links=[str(link) for link in payload.portfolio_links],
+                status=ApplicationStatus.draft,
+                completion_percent=calculate_completion(payload, []),
+            )
             self.db.add(application)
-            self.db.flush()
-
-        application.candidate_id = candidate.id
-        application.role = payload.role
-        application.short_bio = payload.short_bio
-        application.years_experience = payload.years_experience
-        application.skills = payload.skills
-        application.availability = payload.availability
-        application.portfolio_links = [str(link) for link in payload.portfolio_links]
-        application.completion_percent = calculate_completion(payload, application.media_assets)
-        application.status = ApplicationStatus.draft if application.status == ApplicationStatus.draft else application.status
+        else:
+            application.candidate_id = candidate.id
+            application.role = payload.role
+            application.short_bio = payload.short_bio
+            application.years_experience = payload.years_experience
+            application.skills = payload.skills
+            application.availability = payload.availability
+            application.portfolio_links = [str(link) for link in payload.portfolio_links]
+            application.completion_percent = calculate_completion(payload, application.media_assets)
+            application.status = ApplicationStatus.draft if application.status == ApplicationStatus.draft else application.status
 
         self._replace_answers(application, payload)
         self._log_consent(application, payload.gdpr_consent)
