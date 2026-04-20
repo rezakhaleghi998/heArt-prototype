@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, 
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.db.init_db import check_database
 from app.db.session import get_db
 from app.models.media_asset import MediaAsset
 from app.models.enums import ApplicationStatus
@@ -29,6 +30,12 @@ router = APIRouter(prefix="/api/v1")
 @router.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok", "service": "heart-backend"}
+
+
+@router.get("/health/db")
+def health_db() -> dict[str, str]:
+    check_database()
+    return {"status": "ok", "database": "reachable"}
 
 
 @router.post("/applications", response_model=ApplicationOut, status_code=status.HTTP_201_CREATED)

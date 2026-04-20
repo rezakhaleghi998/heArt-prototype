@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes import router
 from app.core.config import settings
 from app.core.logging import request_logging_middleware
+from app.db.init_db import ensure_database_schema
 
 logging.basicConfig(level=logging.INFO)
 
@@ -25,6 +26,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(router)
+
+
+@app.on_event("startup")
+def startup() -> None:
+    ensure_database_schema()
 
 
 @app.get("/")
