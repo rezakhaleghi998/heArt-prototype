@@ -29,12 +29,16 @@ class ApplicationRepository:
         self.db = db
 
     def _query(self):
-        return select(Application).options(
-            selectinload(Application.candidate),
-            selectinload(Application.answers),
-            selectinload(Application.consents),
-            selectinload(Application.media_assets),
-            selectinload(Application.screening_result),
+        return (
+            select(Application)
+            .options(
+                selectinload(Application.candidate),
+                selectinload(Application.answers),
+                selectinload(Application.consents),
+                selectinload(Application.media_assets),
+                selectinload(Application.screening_result),
+            )
+            .execution_options(populate_existing=True)
         )
 
     def list(self, status: ApplicationStatus | None = None) -> list[Application]:

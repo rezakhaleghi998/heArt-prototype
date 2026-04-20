@@ -63,6 +63,7 @@ def submit_application(application_id: uuid.UUID, db: Session = Depends(get_db))
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Intro video richiesto per inviare la candidatura")
     submitted = repo.submit(application)
     ScreeningService(db).screen(submitted)
+    db.expire_all()
     return repo.get(application_id) or submitted
 
 
