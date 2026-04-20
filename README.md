@@ -59,6 +59,7 @@ Open `http://localhost:3000`.
 Frontend:
 
 - `NEXT_PUBLIC_API_BASE_URL`
+- `BACKEND_URL`
 
 Backend:
 
@@ -81,6 +82,8 @@ If `GROQ_API_KEY` is empty, the backend uses a deterministic fallback screening 
 If storage credentials are empty, upload init returns a local placeholder URL. The frontend still creates and confirms media metadata, which keeps the production API shape intact.
 
 For Railway demos without S3/R2 credentials, the frontend uses a direct multipart fallback endpoint on the backend. Files are stored in `LOCAL_STORAGE_DIR` on the service filesystem, which is acceptable for the prototype but should be replaced by object storage for production.
+
+In production, browser API calls go through the frontend's `/api/proxy/*` route. Set `BACKEND_URL` on the frontend service so the proxy can reach the backend at runtime.
 
 ## API Highlights
 
@@ -110,7 +113,8 @@ For Railway demos without S3/R2 credentials, the frontend uses a direct multipar
 5. Add a frontend service from this repo:
    - Root directory: `apps/frontend`
    - Dockerfile path: `Dockerfile`
-   - Set `NEXT_PUBLIC_API_BASE_URL=https://<backend-domain>/api/v1`.
+   - Set `BACKEND_URL=https://<backend-domain>`.
+   - `NEXT_PUBLIC_API_BASE_URL` is optional now. The deployed browser bundle uses `/api/proxy/*`, and the frontend server forwards requests to `BACKEND_URL`.
 6. Deploy the frontend.
 7. Run seed data once from the backend service shell:
 

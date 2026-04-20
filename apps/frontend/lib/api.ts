@@ -1,4 +1,4 @@
-export const API_BASE = (process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/api/v1").replace(/\/$/, "");
+export const API_BASE = "/api/proxy";
 
 export type ApplicationStatus = "draft" | "submitted" | "screening" | "reviewed";
 export type AssetKind = "profile_image" | "intro_video" | "portfolio";
@@ -64,7 +64,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       cache: "no-store"
     });
   } catch {
-    throw new Error(`Backend non raggiungibile. Verifica NEXT_PUBLIC_API_BASE_URL=${API_BASE} e CORS_ORIGINS sul backend.`);
+    throw new Error("Backend non raggiungibile. Verifica BACKEND_URL sul frontend e lo stato del backend Railway.");
   }
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: "Errore API" }));
@@ -98,7 +98,7 @@ export const api = {
         cache: "no-store"
       });
     } catch {
-      throw new Error(`Backend upload non raggiungibile. Verifica NEXT_PUBLIC_API_BASE_URL=${API_BASE} e CORS_ORIGINS sul backend.`);
+      throw new Error("Backend upload non raggiungibile. Verifica BACKEND_URL sul frontend e lo stato del backend Railway.");
     }
     if (!response.ok) {
       const error = await response.json().catch(() => ({ detail: "Errore upload" }));
