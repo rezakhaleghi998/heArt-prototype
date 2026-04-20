@@ -95,16 +95,16 @@ If storage credentials are empty, upload init returns a local placeholder URL. T
 1. Create a new Railway project.
 2. Add a PostgreSQL service.
 3. Add a backend service from this repo:
-   - Root directory: `/`
-   - Dockerfile path: `apps/backend/Dockerfile`
+   - Root directory: `apps/backend`
+   - Dockerfile path: `Dockerfile`
    - Set `DATABASE_URL` from the Railway PostgreSQL connection string.
    - Set `CORS_ORIGINS` to the deployed frontend URL.
    - Set `GROQ_API_KEY` and `GROQ_MODEL`.
    - Optional: set S3-compatible `STORAGE_*` variables.
 4. Deploy the backend. The container runs `alembic upgrade head` before starting Uvicorn.
 5. Add a frontend service from this repo:
-   - Root directory: `/`
-   - Dockerfile path: `apps/frontend/Dockerfile`
+   - Root directory: `apps/frontend`
+   - Dockerfile path: `Dockerfile`
    - Set `NEXT_PUBLIC_API_BASE_URL=https://<backend-domain>/api/v1`.
 6. Deploy the frontend.
 7. Run seed data once from the backend service shell:
